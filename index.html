@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Исследуйте CSV-таблицы: пропуски, дубликаты, графики и отчёты. Обработка файлов прямо в браузере."
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"
+    />
+    <meta name="color-scheme" content="light" />
+    <title>CSV Compass — разберитесь в своих данных</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./src/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">К результатам анализа</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="CSV Compass — начало">
+        <img src="./favicon.svg" width="38" height="38" alt="" />
+        <span>CSV <strong>Compass</strong></span>
+      </a>
+      <span class="privacy"
+        ><span aria-hidden="true">●</span> Файлы остаются у вас</span
+      >
+    </header>
+    <main class="layout">
+      <aside class="sidebar" aria-label="Загрузка и справка">
+        <div class="intro">
+          <h1>Понять таблицу.<br />Увидеть главное.</h1>
+          <p>
+            Найдите пропуски, повторяющиеся строки и закономерности в вашем CSV.
+          </p>
+        </div>
+        <section
+          id="drop-zone"
+          class="upload-panel"
+          aria-labelledby="upload-title"
+        >
+          <svg
+            class="file-icon"
+            viewBox="0 0 48 48"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M13 5h15l9 9v29H13z"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+            <path
+              d="M28 5v10h9M19 24h12M19 30h12M19 36h7"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+          </svg>
+          <h2 id="upload-title">Ваша таблица</h2>
+          <p>Перетащите CSV сюда<br />или выберите на компьютере</p>
+          <input
+            id="file-input"
+            class="visually-hidden"
+            type="file"
+            accept=".csv,.tsv,text/csv,text/tab-separated-values"
+          />
+          <label class="button primary file-label" for="file-input"
+            >Выбрать файл</label
+          >
+          <span class="file-hint">UTF-8 · до 5 МиБ</span>
+        </section>
+        <label class="field-label" for="delimiter">Разделитель</label>
+        <select id="delimiter">
+          <option value="auto">Определить автоматически</option>
+          <option value=",">Запятая ( , )</option>
+          <option value=";">Точка с запятой ( ; )</option>
+          <option value="tab">Табуляция</option>
+        </select>
+        <button id="demo-button" class="button secondary" type="button">
+          Открыть пример
+        </button>
+        <p class="aside-note">
+          Нет файла под рукой? В примере — вымышленные заказы из городов
+          Казахстана.
+        </p>
+        <details class="help">
+          <summary>Как считаются показатели</summary>
+          <p>
+            Пропуск — пустая ячейка или только пробелы. Дубликат — точное
+            повторение всех ячеек строки; первое вхождение не считается
+            повтором.
+          </p>
+          <p>
+            Первая строка — уникальные непустые заголовки. Лимит: 20 000 строк и
+            100 столбцов. Числа с ведущими нулями считаются текстом.
+          </p>
+          <p>
+            Файл обрабатывается в памяти браузера. После обновления страницы его
+            нужно открыть заново.
+          </p>
+        </details>
+      </aside>
+      <section
+        id="workspace"
+        class="workspace"
+        aria-label="Результаты анализа"
+        tabindex="-1"
+      >
+        <div class="workspace-top">
+          <div>
+            <h2>Обзор данных</h2>
+            <p id="file-description">Начните с файла или откройте пример</p>
+          </div>
+          <button
+            id="export-button"
+            class="button export"
+            type="button"
+            disabled
+          >
+            Скачать отчёт <span aria-hidden="true">↓</span>
+          </button>
+        </div>
+        <p id="error" class="error-message" role="alert" hidden></p>
+        <p
+          id="status"
+          class="visually-hidden"
+          role="status"
+          aria-live="polite"
+        ></p>
+        <div id="empty-state" class="empty-state">
+          <div class="empty-grid" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span
+            ><span></span><span></span><span></span><span></span><span></span
+            ><span></span><span></span>
+          </div>
+          <h3>От таблицы к ясной картине</h3>
+          <p>
+            Загрузите CSV — здесь появятся показатели качества, распределение
+            значений и строки вашего файла.
+          </p>
+          <button id="empty-demo-button" class="button primary" type="button">
+            Посмотреть на примере
+          </button>
+          <span>Без регистрации. Без отправки данных.</span>
+        </div>
+        <div id="results" hidden>
+          <dl class="metrics">
+            <div>
+              <dt>Строки данных</dt>
+              <dd id="row-count">0</dd>
+              <span>без заголовка</span>
+            </div>
+            <div>
+              <dt>Столбцы</dt>
+              <dd id="column-count">0</dd>
+              <span>в исходном файле</span>
+            </div>
+            <div>
+              <dt>Пустые ячейки</dt>
+              <dd id="missing-count">0</dd>
+              <span>включая пробелы</span>
+            </div>
+            <div>
+              <dt>Дубликаты строк</dt>
+              <dd id="duplicate-count">0</dd>
+              <span>после первого вхождения</span>
+            </div>
+          </dl>
+          <div class="analysis-grid">
+            <section class="panel chart-panel" aria-labelledby="chart-title">
+              <div class="section-heading">
+                <h3 id="chart-title">Распределение значений</h3>
+                <span class="subtle">Частота</span>
+              </div>
+              <label class="visually-hidden" for="chart-column"
+                >Столбец для графика</label
+              >
+              <select id="chart-column"></select>
+              <ol id="chart" class="chart"></ol>
+              <p id="chart-note" class="panel-note"></p>
+            </section>
+            <section
+              class="panel quality-panel"
+              aria-labelledby="quality-title"
+            >
+              <h3 id="quality-title">Заполненность</h3>
+              <p class="quality-number" id="completeness">0%</p>
+              <progress
+                id="quality-progress"
+                max="100"
+                value="0"
+                aria-label="Доля заполненных ячеек"
+              ></progress>
+              <p id="quality-note"></p>
+              <div class="quality-findings">
+                <p id="missing-note"></p>
+                <p id="duplicate-note"></p>
+              </div>
+              <p class="panel-note">
+                Заполненность не оценивает достоверность данных.
+              </p>
+            </section>
+          </div>
+          <section
+            class="panel profiles-panel"
+            aria-labelledby="profiles-title"
+          >
+            <div class="section-heading">
+              <h3 id="profiles-title">Столбцы под лупой</h3>
+              <span class="subtle">По всему файлу</span>
+            </div>
+            <div
+              class="table-scroll"
+              tabindex="0"
+              role="region"
+              aria-label="Профили столбцов"
+            >
+              <table class="profiles-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Столбец</th>
+                    <th scope="col">Тип</th>
+                    <th scope="col">Уникальных</th>
+                    <th scope="col">Пропуски</th>
+                    <th scope="col">Мин.</th>
+                    <th scope="col">Макс.</th>
+                    <th scope="col">Среднее</th>
+                  </tr>
+                </thead>
+                <tbody id="profiles-body"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel data-panel" aria-labelledby="data-title">
+            <div class="section-heading data-heading">
+              <div>
+                <h3 id="data-title">Исходные данные</h3>
+                <p class="panel-note">
+                  Пустые ячейки и повторные строки отмечены цветом.
+                </p>
+              </div>
+              <div class="search-field">
+                <label class="visually-hidden" for="search"
+                  >Найти в таблице</label
+                ><input
+                  id="search"
+                  type="search"
+                  placeholder="Найти в таблице…"
+                />
+              </div>
+            </div>
+            <div
+              class="table-scroll"
+              tabindex="0"
+              role="region"
+              aria-label="Исходные строки CSV"
+            >
+              <table id="data-table">
+                <thead id="data-head"></thead>
+                <tbody id="data-body"></tbody>
+              </table>
+            </div>
+            <p id="no-matches" class="no-matches" hidden>
+              Совпадений нет. Попробуйте другой запрос.
+            </p>
+            <div class="pagination">
+              <span id="page-description" role="status"></span>
+              <div>
+                <button
+                  id="previous-page"
+                  class="button pager"
+                  type="button"
+                  aria-label="Предыдущая страница"
+                >
+                  Назад</button
+                ><button
+                  id="next-page"
+                  class="button pager"
+                  type="button"
+                  aria-label="Следующая страница"
+                >
+                  Далее
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+        <footer class="workspace-footer">
+          <span>CSV Compass</span
+          ><span>Данные понятнее. Решения увереннее.</span>
+        </footer>
+      </section>
+    </main>
+    <noscript>Для анализа CSV включите JavaScript в браузере.</noscript>
+  </body>
+</html>
