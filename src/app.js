@@ -1,6 +1,7 @@
 import { parseCSV, analyzeCSV, MAX_BYTES } from "./csv.js";
 import { buildReport } from "./report.js";
-import { DEMO_CSV } from "./demo.js";
+import { DEMO_CSV, SALES_DEMO_CSV } from "./demo.js";
+import { mountSales } from "./sales-view.js";
 
 const PAGE_SIZE = 25;
 const numberFormat = new Intl.NumberFormat("ru-RU", {
@@ -10,6 +11,7 @@ const format = (number) => numberFormat.format(number);
 
 export function mountApp(document) {
   const el = (id) => document.getElementById(id);
+  const sales = mountSales(document);
   let dataset = null;
   let source = null;
   let page = 0;
@@ -23,6 +25,7 @@ export function mountApp(document) {
   }
 
   function clearResults() {
+    sales.reset();
     dataset = null;
     page = 0;
     el("results").hidden = true;
@@ -208,6 +211,7 @@ export function mountApp(document) {
         demo: source.demo,
       };
       renderAnalysis();
+      sales.setDataset(dataset);
     } catch (error) {
       clearResults();
       showError(error.message);
@@ -243,17 +247,19 @@ export function mountApp(document) {
     }
   }
 
-  function loadDemo() {
+  function loadDemo(text = DEMO_CSV, filename = "demo-orders.csv") {
     readSequence++;
-    source = { text: DEMO_CSV, filename: "demo-orders.csv", demo: true };
+    source = { text, filename, demo: true };
     const automatic = el("delimiter").querySelector('option[value="auto"]');
     for (const option of el("delimiter").options)
       option.selected = option === automatic;
     analyzeSource();
   }
 
-  el("demo-button").addEventListener("click", loadDemo);
-  el("empty-demo-button").addEventListener("click", loadDemo);
+  el("demo-button").addEventListener("click", () => loadDemo());
+  const loadSalesDemo = () => loadDemo(SALES_DEMO_CSV, "demo-sales.csv");
+  el("sales-demo-button").addEventListener("click", loadSalesDemo);
+  el("empty-demo-button").addEventListener("click", loadSalesDemo);
   el("file-input").addEventListener("change", (event) => {
     void loadFile(event.target.files[0]);
     event.target.value = "";

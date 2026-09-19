@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Исследуйте CSV-таблицы: пропуски, дубликаты, графики и отчёты. Обработка файлов прямо в браузере."
+      content="Сравните продажи, найдите товары со снижением выручки и проверьте расчёты. CSV обрабатывается локально, без AI и отправки данных."
     />
     <meta
       http-equiv="Content-Security-Policy"
@@ -31,9 +31,10 @@
     <main class="layout">
       <aside class="sidebar" aria-label="Загрузка и справка">
         <div class="intro">
-          <h1>Понять таблицу.<br />Увидеть главное.</h1>
+          <h1>От таблицы продаж<br />к понятным выводам.</h1>
           <p>
-            Найдите пропуски, повторяющиеся строки и закономерности в вашем CSV.
+            Сравните два периода, найдите изменения выручки и проверьте каждую
+            цифру.
           </p>
         </div>
         <section
@@ -78,12 +79,19 @@
           <option value=";">Точка с запятой ( ; )</option>
           <option value="tab">Табуляция</option>
         </select>
+        <button
+          id="sales-demo-button"
+          class="button primary sales-demo"
+          type="button"
+        >
+          Разобрать пример продаж
+        </button>
         <button id="demo-button" class="button secondary" type="button">
-          Открыть пример
+          Пример качества данных
         </button>
         <p class="aside-note">
-          Нет файла под рукой? В примере — вымышленные заказы из городов
-          Казахстана.
+          Все примеры вымышленные. Сравнение продаж работает без аккаунта и
+          внешнего сервиса.
         </p>
         <details class="help">
           <summary>Как считаются показатели</summary>
@@ -135,17 +143,147 @@
             ><span></span><span></span><span></span><span></span><span></span
             ><span></span><span></span>
           </div>
-          <h3>От таблицы к ясной картине</h3>
+          <h3>Выручка снизилась. Какие товары повлияли?</h3>
           <p>
-            Загрузите CSV — здесь появятся показатели качества, распределение
-            значений и строки вашего файла.
+            Откройте пример магазина: сравните две недели, найдите снижение и
+            посмотрите расчёт по каждому товару.
           </p>
           <button id="empty-demo-button" class="button primary" type="button">
-            Посмотреть на примере
+            Разобрать продажи за минуту
           </button>
           <span>Без регистрации. Без отправки данных.</span>
         </div>
         <div id="results" hidden>
+          <section class="panel sales-panel" aria-labelledby="sales-title">
+            <div class="section-heading sales-heading">
+              <div>
+                <span class="sales-eyebrow">Локальный помощник · без AI</span>
+                <h3 id="sales-title">Что происходит с продажами?</h3>
+              </div>
+              <button
+                id="sales-export"
+                class="button export"
+                type="button"
+                disabled
+              >
+                Отчёт о продажах ↓
+              </button>
+            </div>
+            <p class="panel-note">
+              Нужны оплаченные продажи в одной валюте: дата, товар и полная
+              сумма строки. Статусы и количество не учитываются; возвраты пока
+              не поддерживаются.
+            </p>
+            <details class="sales-settings" open>
+              <summary>Столбцы и период сравнения</summary>
+              <div class="sales-fields">
+                <label for="sales-date"
+                  >Дата продажи<select id="sales-date"></select
+                ></label>
+                <label for="sales-product"
+                  >Товар<select id="sales-product"></select
+                ></label>
+                <label for="sales-amount"
+                  >Сумма строки<select id="sales-amount"></select
+                ></label>
+              </div>
+              <div class="sales-period-fields">
+                <label for="sales-start"
+                  >Период с<input
+                    id="sales-start"
+                    type="date"
+                    min="1900-01-01"
+                    max="9999-12-31"
+                /></label>
+                <label for="sales-end"
+                  >По включительно<input
+                    id="sales-end"
+                    type="date"
+                    min="1900-01-01"
+                    max="9999-12-31"
+                /></label>
+                <button id="sales-apply" class="button primary" type="button">
+                  Рассчитать
+                </button>
+              </div>
+              <label class="sales-checkbox"
+                ><input id="sales-deduplicate" type="checkbox" /> Исключать
+                точные повторы строк</label
+              >
+              <p class="panel-note">
+                Сравним с предыдущим периодом той же длины (до 366 дней). По
+                умолчанию — 7 дней до последней пригодной продажи в файле. Даты:
+                ГГГГ-ММ-ДД или ДД.ММ.ГГГГ. Суммы: без разделителей тысяч, до
+                двух знаков после точки или запятой. Совпадающие строки могут
+                быть разными продажами — проверьте их перед исключением.
+              </p>
+            </details>
+            <p id="sales-hint" class="sales-hint" role="status"></p>
+            <p id="sales-error" class="error-message" role="alert" hidden></p>
+            <div id="sales-results" hidden>
+              <dl class="sales-metrics">
+                <div>
+                  <dt>Выбранный период</dt>
+                  <dd id="sales-current"></dd>
+                  <span id="sales-current-period"></span>
+                </div>
+                <div>
+                  <dt>Предыдущий период</dt>
+                  <dd id="sales-previous"></dd>
+                  <span id="sales-previous-period"></span>
+                </div>
+                <div>
+                  <dt>Изменение выручки</dt>
+                  <dd id="sales-change"></dd>
+                  <span id="sales-delta"></span>
+                </div>
+              </dl>
+              <div
+                id="sales-questions"
+                class="sales-questions"
+                role="group"
+                aria-label="Вопросы о продажах"
+              ></div>
+              <div class="sales-answer-card" role="status" aria-live="polite">
+                <h4 id="sales-answer-title"></h4>
+                <p id="sales-answer"></p>
+                <p id="sales-method" class="panel-note"></p>
+              </div>
+              <div id="sales-evidence-region">
+                <div
+                  class="table-scroll"
+                  tabindex="0"
+                  role="region"
+                  aria-label="Расчёт продаж по товарам"
+                >
+                  <table class="sales-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Товар</th>
+                        <th scope="col">Прежде</th>
+                        <th scope="col">Сейчас</th>
+                        <th scope="col">Разница</th>
+                        <th scope="col">Изменение</th>
+                        <th scope="col">Строки прежде → сейчас</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sales-evidence"></tbody>
+                  </table>
+                </div>
+                <p id="sales-evidence-note" class="panel-note"></p>
+              </div>
+              <p class="panel-note sales-disclosure">
+                Суммы — в денежных единицах исходного файла. Поиск в таблице
+                ниже не меняет расчёты. Ответы формируются по фиксированным
+                правилам; причины изменений и будущие продажи не
+                предсказываются.
+              </p>
+            </div>
+            <details id="sales-exclusions" class="sales-exclusions" hidden>
+              <summary id="sales-invalid-count"></summary>
+              <ul id="sales-invalid"></ul>
+            </details>
+          </section>
           <dl class="metrics">
             <div>
               <dt>Строки данных</dt>

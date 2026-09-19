@@ -21,6 +21,11 @@ test("development server serves the application and keeps private paths inaccess
   const module = await fetch(`${origin}/src/main.js`);
   assert.equal(module.status, 200);
   assert.match(module.headers.get("content-type"), /javascript/);
+  for (const name of ["sales", "sales-answers", "sales-view"]) {
+    const asset = await fetch(`${origin}/src/${name}.js`);
+    assert.equal(asset.status, 200);
+    assert.match(asset.headers.get("content-type"), /javascript/);
+  }
   const style = await fetch(`${origin}/styles.css`, { method: "HEAD" });
   assert.equal(style.status, 200);
   assert.equal(await style.text(), "");

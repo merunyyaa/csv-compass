@@ -140,3 +140,115 @@ test("download button produces the report for the full dataset after filtering",
   assert.match(report, /Строки данных: 2/);
   assert.match(report, /Среднее: 15/);
 });
+
+test("sales demo produces a hand-checked period comparison and explained declines", () => {
+  const { el, document } = setup();
+  assert.ok(el("sales-demo-button"));
+  el("sales-demo-button").click();
+  assert.equal(el("sales-results").hidden, false);
+  assert.equal(el("sales-start").value, "2026-09-08");
+  assert.equal(el("sales-end").value, "2026-09-14");
+  assert.equal(el("sales-current").textContent.replace(/\s/g, ""), "85000,00");
+  assert.equal(
+    el("sales-previous").textContent.replace(/\s/g, ""),
+    "100000,00",
+  );
+  assert.equal(el("sales-change").textContent, "−15%");
+  document.querySelector('[data-sales-question="declines"]').click();
+  assert.match(el("sales-answer").textContent, /Кофе/);
+  assert.match(el("sales-answer").textContent.replace(/\s/g, ""), /20000,00/);
+  assert.equal(el("sales-evidence").children.length, 1);
+});
+
+test("editing sales dates invalidates conclusions until recalculation and resets on a new file", async () => {
+  const { el, window, app } = setup();
+  assert.ok(el("sales-demo-button"));
+  el("sales-demo-button").click();
+  el("sales-start").value = "2026-10-01";
+  el("sales-start").dispatchEvent(new window.Event("input"));
+  assert.equal(el("sales-results").hidden, true);
+  assert.equal(el("sales-export").disabled, true);
+  el("sales-apply").click();
+  assert.equal(el("sales-error").hidden, false);
+  await app.loadFile(csvFile("x,y\n1,2"));
+  assert.equal(el("sales-start").value, "");
+  assert.equal(el("sales-results").hidden, true);
+  assert.equal(el("sales-answer").textContent, "");
+});
+
+test("manual column mapping works for unfamiliar headers and duplicates are opt-in", async () => {
+  const { app, el, window } = setup();
+  await app.loadFile(
+    csvFile("when,what,paid\n2026-09-14,A,10\n2026-09-14,A,10"),
+  );
+  assert.ok(el("sales-results"));
+  assert.equal(el("sales-results").hidden, true);
+  for (const [field, index] of [
+    ["date", 0],
+    ["product", 1],
+    ["amount", 2],
+  ]) {
+    // LinkeDOM clears the select when a later option gets selected=false.
+    for (const option of el(`sales-${field}`).options)
+      option.removeAttribute("selected");
+    el(`sales-${field}`)
+      .querySelector(`option[value="${index}"]`)
+      .setAttribute("selected", "");
+    el(`sales-${field}`).dispatchEvent(new window.Event("change"));
+  }
+  el("sales-apply").click();
+  assert.equal(el("sales-current").textContent, "20,00");
+  el("sales-deduplicate").checked = true;
+  el("sales-deduplicate").dispatchEvent(new window.Event("change"));
+  assert.equal(el("sales-results").hidden, true);
+  el("sales-apply").click();
+  assert.equal(el("sales-current").textContent, "10,00");
+});
+
+test("sales product names remain text and all invalid rows are explained", async () => {
+  const { app, el } = setup();
+  await app.loadFile(
+    csvFile(
+      "date,product,amount\n2026-09-14,<img src=x onerror=alert(1)>,10\n2026-02-30,A,20",
+    ),
+  );
+  assert.ok(el("sales-results"));
+  assert.equal(el("sales-results").hidden, false);
+  assert.equal(el("sales-evidence").querySelector("img"), null);
+  assert.match(el("sales-evidence").textContent, /<img/);
+  assert.match(el("sales-invalid").textContent, /2.*некорректная дата/);
+});
+
+test("sales download contains the current comparison and is unaffected by table search", async () => {
+  const { el, window, document } = setup();
+  assert.ok(el("sales-demo-button"));
+  el("sales-demo-button").click();
+  el("search").value = "не существует";
+  el("search").dispatchEvent(new window.Event("input"));
+  let url;
+  document.addEventListener("click", (event) => {
+    if (event.target.tagName === "A") {
+      event.preventDefault();
+      url = event.target.href;
+    }
+  });
+  el("sales-export").click();
+  const report = await (await fetch(url)).text();
+  assert.match(report.replace(/\s/g, ""), /85000,00/);
+  assert.match(report, /2026-09-08/);
+  assert.match(report, /"Кофе"/);
+});
+
+test("an entirely invalid sales file exposes row errors and disables the old report", async () => {
+  const { app, el } = setup();
+  el("sales-demo-button").click();
+  await app.loadFile(
+    csvFile("date,product,amount\n2026-02-30,A,10\n2026-09-14,B,-5"),
+  );
+  assert.equal(el("sales-results").hidden, true);
+  assert.equal(el("sales-export").disabled, true);
+  assert.equal(el("sales-error").hidden, false);
+  assert.equal(el("sales-exclusions").hidden, false);
+  assert.equal(el("sales-invalid").children.length, 2);
+  assert.match(el("sales-error").textContent, /Нет пригодных строк/);
+});

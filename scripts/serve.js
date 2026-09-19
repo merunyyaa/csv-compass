@@ -7,10 +7,16 @@ const assets = new Map([
   ["/index.html", ["index.html", "text/html"]],
   ["/styles.css", ["styles.css", "text/css"]],
   ["/favicon.svg", ["favicon.svg", "image/svg+xml"]],
-  ...["app", "csv", "demo", "main", "report"].map((name) => [
-    `/src/${name}.js`,
-    [`src/${name}.js`, "text/javascript"],
-  ]),
+  ...[
+    "app",
+    "csv",
+    "demo",
+    "main",
+    "report",
+    "sales",
+    "sales-answers",
+    "sales-view",
+  ].map((name) => [`/src/${name}.js`, [`src/${name}.js`, "text/javascript"]]),
 ]);
 
 export function createAppServer() {
